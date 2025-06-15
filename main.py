@@ -10,8 +10,10 @@ NEUTRON_RADIUS = 3
 FUEL_RODS_AMOUNT = 5
 CONTROL_RODS_AMOUNT = 2
 NEUTRONS_PER_FISSION = 3
-
-control_rods_height = 200 # valor inicial
+CONTROL_RODS_HEIGHT = 500
+K_PROPORTIONAL = 0.001
+K_INTEGRAL = 1
+K_DERIVATIVE = 20
 
 # Slider para controlar el setpoint de neutrones
 slider_x = 150
@@ -71,11 +73,12 @@ class BarraControl:
         self.x = x
         self.altura = altura
         self.ancho = 10
-        self.y = 20
+        self.y = 0
 
-    def move(self, nueva_altura):
-        self.altura = nueva_altura
-        self.y = HEIGHT // 2 - nueva_altura // 2
+    def move(self, dy):
+        if (self.y + self.altura + dy > HEIGHT or self.y + self.altura + dy < 0):
+            return
+        self.y += dy
 
     def draw(self, display):
         pygame.draw.rect(display, (50, 50, 50), (self.x, self.y, self.ancho, self.altura))
@@ -86,14 +89,19 @@ class BarraControl:
 
 # --- Inicialización ---
 fuel_rods = [BarraCombustible(x, y) for x in range(100, 700, 120) for y in range(150, 450, 100)]
-control_rods = [BarraControl(x, control_rods_height) for x in range(160, 600, 120)]
+control_rods = [BarraControl(x, CONTROL_RODS_HEIGHT) for x in range(40, 720, 120)]
 neutrons = []
 
+def proportional_control(error_signal):
+    return K_PROPORTIONAL * (error_signal)
+
 def controller():
-    """
-    Función vacía para implementar control PID más adelante.
-    """
-    pass
+    error_signal = neutron_target - len(neutrons)
+    return proportional_control(error_signal)
+
+def actuate_control_rod(control_signal):
+    for rod in control_rods:
+        rod.move(-control_signal) # si es positiva, la hay neutrones de mas, la barra tiene que bajar
 
 def emit_neutrons(origin, cantidad):
     for _ in range(cantidad):
@@ -128,7 +136,8 @@ while corriendo:
     display.fill((240, 240, 240))
 
     # Control PID (por ahora vacío)
-    controller()
+    control_signal = controller()
+    actuate_control_rod(control_signal)
 
     # Mover y procesar neutrones
     for n in neutrons:
