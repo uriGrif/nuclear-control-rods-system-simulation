@@ -1,6 +1,8 @@
 import pygame
 import random
 import math
+import matplotlib.pyplot as plt
+import threading
 
 # --- Configuración ---
 WIDTH, HEIGHT = 700, 500
@@ -11,9 +13,10 @@ FUEL_RODS_AMOUNT = 5
 CONTROL_RODS_AMOUNT = 2
 NEUTRONS_PER_FISSION = 3
 CONTROL_RODS_HEIGHT = 500
-K_PROPORTIONAL = 0.001
-K_INTEGRAL = 0.001
-K_DERIVATIVE = 0.001
+MAXIMUM_NEUTRON_LIFESPAN = 200 # simboliza el efecto del moderador
+K_PROPORTIONAL = 0.01
+K_INTEGRAL = 3
+K_DERIVATIVE = 0.005
 MAX_ACCUMULATED_ERROR = 1000 # esto es xq sino al principio crece un monton y dsps nunca puede bajar
 
 # Slider para controlar el setpoint de neutrones
@@ -28,6 +31,26 @@ neutron_target = 500  # valor inicial
 # Variables de control PID
 acummulated_error = 0
 previous_error = 0
+error = neutron_target
+
+# Variables para el grafico
+error_history = []  # guarda los últimos 500 errores
+frame_count = 0  # para mostrar el gráfico cada cierto tiempo
+
+def graficar_error():
+    plt.ion()
+    fig, ax = plt.subplots()
+    while corriendo:
+        ax.clear()
+        ax.plot(list(error_history), label="Error")
+        ax.axhline(0, color='gray', linestyle='--')
+        ax.set_title("Evolución del error")
+        ax.set_xlabel("Tiempo (frames)")
+        ax.set_ylabel("Error")
+        ax.legend()
+        ax.set_xlim(0, len(error_history))  # Muestra todo el historial desde el inicio
+        ax.set_ylim(-1000, 1000)
+        plt.pause(1 / FPS)
 
 pygame.init()
 display = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -43,6 +66,7 @@ class Neutron:
         angle = random.uniform(0, 2 * math.pi)
         self.dx = math.cos(angle) * NEUTRON_VELOCITY
         self.dy = math.sin(angle) * NEUTRON_VELOCITY
+        self.lifespan = 0 # simula la vida del neutron, si llega a un limite, se elimina
 
     def move(self):
         self.x += self.dx
@@ -113,6 +137,8 @@ def derivative_control(error_signal):
 
 def controller():
     error_signal = neutron_target - len(neutrons)
+    global error
+    error = error_signal  # Actualizamos el error global
     return proportional_control(error_signal) + integral_control(error_signal) + derivative_control(error_signal)
 
 def actuate_control_rod(control_signal):
@@ -131,6 +157,11 @@ def position_to_neutron_value(pos_x):
 # Emitimos neutrones iniciales
 for rod in fuel_rods:
     emit_neutrons(rod, NEUTRONS_PER_FISSION)
+
+
+# --- Hilo para grafica el error ---
+graphics_thread = threading.Thread(target=graficar_error, daemon=True)
+graphics_thread.start()
 
 # --- Bucle principal ---
 corriendo = True
@@ -159,6 +190,12 @@ while corriendo:
     for n in neutrons:
         n.bounce()
         n.move()
+
+        n.lifespan += 1 # ALF, NO VEAS ESTO, le toque sus cositas al neutron
+        
+        if n.lifespan > MAXIMUM_NEUTRON_LIFESPAN:
+            neutrons.remove(n)
+            continue
 
         # Colisión con barras de combustible
         colision = False
@@ -206,6 +243,10 @@ while corriendo:
     # Mostrar valor
     slider_text = font.render(f"Setpoint de neutrones: {neutron_target}", True, (0, 0, 0))
     display.blit(slider_text, (slider_x, slider_y - 20))
+
+    # Guardar historial de error
+    error_history.append(error)
+    frame_count += 1
 
     pygame.display.flip()
     reloj.tick(FPS)
