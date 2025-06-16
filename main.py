@@ -12,8 +12,9 @@ CONTROL_RODS_AMOUNT = 2
 NEUTRONS_PER_FISSION = 3
 CONTROL_RODS_HEIGHT = 500
 K_PROPORTIONAL = 0.001
-K_INTEGRAL = 1
-K_DERIVATIVE = 20
+K_INTEGRAL = 0.001
+K_DERIVATIVE = 0.001
+MAX_ACCUMULATED_ERROR = 1000 # esto es xq sino al principio crece un monton y dsps nunca puede bajar
 
 # Slider para controlar el setpoint de neutrones
 slider_x = 150
@@ -23,6 +24,10 @@ slider_height = 10
 slider_handle_radius = 8
 slider_active = False
 neutron_target = 500  # valor inicial
+
+# Variables de control PID
+acummulated_error = 0
+previous_error = 0
 
 pygame.init()
 display = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -95,9 +100,20 @@ neutrons = []
 def proportional_control(error_signal):
     return K_PROPORTIONAL * (error_signal)
 
+def integral_control(error_signal):
+    global acummulated_error
+    acummulated_error += max(-MAX_ACCUMULATED_ERROR, min(MAX_ACCUMULATED_ERROR, acummulated_error))
+    return K_INTEGRAL * acummulated_error
+
+def derivative_control(error_signal):
+    global previous_error
+    derivative = (error_signal - previous_error) / (1 / FPS)
+    previous_error = error_signal
+    return K_DERIVATIVE * derivative
+
 def controller():
     error_signal = neutron_target - len(neutrons)
-    return proportional_control(error_signal)
+    return proportional_control(error_signal) + integral_control(error_signal) + derivative_control(error_signal)
 
 def actuate_control_rod(control_signal):
     for rod in control_rods:
@@ -168,6 +184,11 @@ while corriendo:
         c.draw(display)
     for n in neutrons:
         n.draw(display)
+
+    # para que reviva si se queda sin neutrones
+    if len(neutrons) < 1:
+        for rod in fuel_rods:
+            emit_neutrons(rod, NEUTRONS_PER_FISSION)
 
 
     # Mostrar contador
