@@ -9,10 +9,14 @@ NEUTRON_RADIUS = 3
 NEUTRONS_PER_FISSION = 3
 CONTROL_RODS_HEIGHT = 500
 MAXIMUM_NEUTRON_LIFESPAN = 200
-K_PROPORTIONAL = 0.01
-K_INTEGRAL = 3
-K_DERIVATIVE = 0.005
-MAX_ACCUMULATED_ERROR = 1000
+K_PROPORTIONAL = 1.07
+K_INTEGRAL = 0.0001
+K_DERIVATIVE = 0.28
+MAX_ACCUMULATED_ERROR = 5000
+
+enable_P = True
+enable_I = True
+enable_D = True
 
 slider_x = 150
 slider_y = 460
@@ -78,6 +82,7 @@ class BarraControl:
 
 def run_simulador(q):
     pygame.init()
+    global enable_P, enable_I, enable_D
     display = pygame.display.set_mode((WIDTH, HEIGHT))
     reloj = pygame.time.Clock()
     font = pygame.font.SysFont(None, 24)
@@ -117,6 +122,14 @@ def run_simulador(q):
                     perturbation2 = random.choice([-200, 200])
                     for rod in control_rods:
                         rod.move(perturbation2)
+                # Interruptor P
+                elif 380 <= mx <= 460 and 400 <= my <= 430:
+                    enable_P = not enable_P
+                elif 470 <= mx <= 550 and 400 <= my <= 430:
+                    enable_I = not enable_I
+                elif 560 <= mx <= 640 and 400 <= my <= 430:
+                    enable_D = not enable_D
+
             elif ev.type == pygame.MOUSEBUTTONUP:
                 slider_active = False
 
@@ -127,17 +140,28 @@ def run_simulador(q):
             neutron_target = int(rel * 1000)
 
         # PID
+
+        Kp = K_PROPORTIONAL if enable_P else 0
+        Ki = K_INTEGRAL if enable_I else 0
+        Kd = K_DERIVATIVE if enable_D else 0
+
+
         error = neutron_target - len(neutrons)
-        accumulated_error += max(-MAX_ACCUMULATED_ERROR, min(MAX_ACCUMULATED_ERROR, accumulated_error))
+        accumulated_error += error * (1/FPS)
         derivative = (error - previous_error) / (1 / FPS)
         previous_error = error
+        proportional_control = Kp * error
+        derivative_control = Kd * derivative
+        integral_control = Ki * accumulated_error
+        
         control_signal = (
-            K_PROPORTIONAL * error +
-            K_INTEGRAL * accumulated_error +
-            K_DERIVATIVE * derivative
+           proportional_control +
+            derivative_control +
+            integral_control
         )
+
         for rod in control_rods:
-            rod.move(-control_signal)
+            rod.move(-control_signal * 0.05)
 
         new_neutrons = []
         for n in neutrons[:]:
@@ -167,7 +191,7 @@ def run_simulador(q):
                     neutrons.append(Neutron(rod.x, rod.y))
 
         # Enviar el error a la cola
-        q.put((error, control_signal, neutron_target, len(neutrons), perturbation1, perturbation2))
+        q.put((error, proportional_control,derivative_control,integral_control, neutron_target, len(neutrons), perturbation1, perturbation2))
 
         # Dibujar
         display.fill((240, 240, 240))
@@ -194,6 +218,21 @@ def run_simulador(q):
 
         perturbation1 = 0
         perturbation2 = 0
+
+        # Botones interruptores PID
+      # Botones interruptores PID a la derecha de los de perturbación
+        pygame.draw.rect(display, (180, 255, 180) if enable_P else (255, 180, 180), (380, 400, 80, 30))
+        textP = font.render("P ON" if enable_P else "P OFF", True, (0, 0, 0))
+        display.blit(textP, (390, 405))
+
+        pygame.draw.rect(display, (180, 255, 180) if enable_I else (255, 180, 180), (470, 400, 80, 30))
+        textI = font.render("I ON" if enable_I else "I OFF", True, (0, 0, 0))
+        display.blit(textI, (480, 405))
+
+        pygame.draw.rect(display, (180, 255, 180) if enable_D else (255, 180, 180), (560, 400, 80, 30))
+        textD = font.render("D ON" if enable_D else "D OFF", True, (0, 0, 0))
+        display.blit(textD, (570, 405))
+
 
         pygame.display.flip()
         reloj.tick(FPS)
