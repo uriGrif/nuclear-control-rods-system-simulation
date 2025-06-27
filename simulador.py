@@ -96,6 +96,9 @@ def run_simulador(q):
             neutrons.append(Neutron(rod.x, rod.y))
 
     corriendo = True
+    perturbation1 = 0
+    perturbation2 = 0
+
     while corriendo:
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
@@ -104,6 +107,16 @@ def run_simulador(q):
                 mx, my = pygame.mouse.get_pos()
                 if slider_y - slider_height / 2 <= my <= slider_y + slider_width:
                     slider_active = True
+                elif 20 <= mx <= 180 and 400 <= my <= 430:
+                    # Perturbación 1: aumento de neutrones
+                    for _ in range(200):
+                        neutrons.append(Neutron(random.randint(100, 600), random.randint(100, 400)))
+                    perturbation1 = 200
+                elif 200 <= mx <= 360 and 400 <= my <= 430:
+                    # Perturbación 2: mover barras aleatoriamente
+                    perturbation2 = random.choice([-200, 200])
+                    for rod in control_rods:
+                        rod.move(perturbation2)
             elif ev.type == pygame.MOUSEBUTTONUP:
                 slider_active = False
 
@@ -154,7 +167,7 @@ def run_simulador(q):
                     neutrons.append(Neutron(rod.x, rod.y))
 
         # Enviar el error a la cola
-        q.put(error)
+        q.put((error, control_signal, neutron_target, len(neutrons), perturbation1, perturbation2))
 
         # Dibujar
         display.fill((240, 240, 240))
@@ -168,6 +181,19 @@ def run_simulador(q):
         pygame.draw.circle(display, (100, 100, 255), (handle_x, slider_y + slider_height // 2), slider_handle_radius)
         slider_text = font.render(f"Setpoint de neutrones: {neutron_target}", True, (0, 0, 0))
         display.blit(slider_text, (slider_x, slider_y - 20))
+
+        # Botón Perturbación 1
+        pygame.draw.rect(display, (255, 180, 180), (20, 400, 160, 30))
+        text1 = font.render("Perturbación 1", True, (0, 0, 0))
+        display.blit(text1, (30, 405))
+
+        # Botón Perturbación 2
+        pygame.draw.rect(display, (180, 200, 255), (200, 400, 160, 30))
+        text2 = font.render("Perturbación 2", True, (0, 0, 0))
+        display.blit(text2, (210, 405))
+
+        perturbation1 = 0
+        perturbation2 = 0
 
         pygame.display.flip()
         reloj.tick(FPS)
