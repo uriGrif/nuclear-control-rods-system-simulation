@@ -4,15 +4,16 @@ import math
 
 WIDTH, HEIGHT = 700, 500
 FPS = 60
-NEUTRON_VELOCITY = 2
+NEUTRON_VELOCITY = 1.8
 NEUTRON_RADIUS = 3
 NEUTRONS_PER_FISSION = 3
 CONTROL_RODS_HEIGHT = 500
-MAXIMUM_NEUTRON_LIFESPAN = 200
-K_PROPORTIONAL = 1.07
-K_INTEGRAL = 0.0001
-K_DERIVATIVE = 0.28
-MAX_ACCUMULATED_ERROR = 5000
+MAXIMUM_NEUTRON_LIFESPAN = 120
+K_PROPORTIONAL = 0.6
+K_INTEGRAL = 0.2
+K_DERIVATIVE = 0.00001
+
+MAX_ACCUM_ERROR = 10000
 
 enable_P = True
 enable_I = True
@@ -68,7 +69,7 @@ class BarraControl:
         self.x = x
         self.altura = altura
         self.ancho = 10
-        self.y = 0
+        self.y = -CONTROL_RODS_HEIGHT
 
     def move(self, dy):
         if 0 <= self.y + self.altura + dy <= HEIGHT:
@@ -80,7 +81,10 @@ class BarraControl:
     def colisions(self, neutron):
         return self.x <= neutron.x <= self.x + self.ancho and self.y <= neutron.y <= self.y + self.altura
 
+
 def run_simulador(q):
+    import os
+    os.environ['SDL_VIDEO_WINDOW_POS'] = "1200,100"
     pygame.init()
     global enable_P, enable_I, enable_D
     display = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -91,7 +95,6 @@ def run_simulador(q):
     accumulated_error = 0
     previous_error = 0
     slider_active = False
-    frame_count = 0
 
     fuel_rods = [BarraCombustible(x, y) for x in range(100, 700, 120) for y in range(150, 450, 100)]
     control_rods = [BarraControl(x, CONTROL_RODS_HEIGHT) for x in range(40, 720, 120)]
@@ -140,28 +143,34 @@ def run_simulador(q):
             neutron_target = int(rel * 1000)
 
         # PID
-
         Kp = K_PROPORTIONAL if enable_P else 0
         Ki = K_INTEGRAL if enable_I else 0
         Kd = K_DERIVATIVE if enable_D else 0
 
-
         error = neutron_target - len(neutrons)
+        
         accumulated_error += error * (1/FPS)
+        if (accumulated_error > MAX_ACCUM_ERROR):
+            accumulated_error = MAX_ACCUM_ERROR
+        if (accumulated_error < -MAX_ACCUM_ERROR):
+            accumulated_error = -MAX_ACCUM_ERROR
         derivative = (error - previous_error) / (1 / FPS)
+        
         previous_error = error
+        
         proportional_control = Kp * error
-        derivative_control = Kd * derivative
         integral_control = Ki * accumulated_error
+        derivative_control = Kd * derivative
+
         
         control_signal = (
-           proportional_control +
-            derivative_control +
-            integral_control
+        proportional_control +
+            integral_control +
+            derivative_control
         )
 
         for rod in control_rods:
-            rod.move(-control_signal * 0.05)
+            rod.move(-control_signal)
 
         new_neutrons = []
         for n in neutrons[:]:
@@ -191,7 +200,7 @@ def run_simulador(q):
                     neutrons.append(Neutron(rod.x, rod.y))
 
         # Enviar el error a la cola
-        q.put((error, proportional_control,derivative_control,integral_control, neutron_target, len(neutrons), perturbation1, perturbation2))
+        q.put((error, control_signal, proportional_control, integral_control, derivative_control, neutron_target, len(neutrons), perturbation1, perturbation2))
 
         # Dibujar
         display.fill((240, 240, 240))
