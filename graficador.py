@@ -1,3 +1,6 @@
+import matplotlib
+matplotlib.use('TkAgg')  # Forzar backend que soporta .window en FigureManager
+
 import matplotlib.pyplot as plt
 import time
 
@@ -5,8 +8,18 @@ def run_graficador(q):
     plt.ion()
     fig, axs = plt.subplots(8, 1, figsize=(12, 16), sharex=True)
     manager = plt.get_current_fig_manager()
-    manager.window.wm_geometry("+0+0")
+
+    # Intentar posicionar la ventana solo si tiene atributo .window
+    if hasattr(manager, 'window'):
+        try:
+            manager.window.wm_geometry("+0+0")
+        except Exception as e:
+            print(f"No se pudo posicionar la ventana: {e}")
+    
     fig.tight_layout(pad=3.0)
+
+    # resto del bucle o lógica de graficación...
+
     error_history = []
 
     FPS = 60  # Debe coincidir con el del simulador
@@ -47,40 +60,40 @@ def run_graficador(q):
         axs[0].legend()
         
         # Realimentacion
-        axs[1].plot(times, realim, label="Realimentación", color='brown')
-        axs[1].axhline(0, color="gray", linestyle="--")
-        axs[1].set_ylabel("Señal")
-        axs[1].legend()
+        axs[6].plot(times, realim, label="Realimentación", color='brown')
+        axs[6].axhline(0, color="gray", linestyle="--")
+        axs[6].set_ylabel("Señal")
+        axs[6].legend()
 
         # Error
-        axs[2].plot(times, errores, label="Error", color='red')
-        axs[2].axhline(0, color="gray", linestyle="--")
-        axs[2].set_ylabel("Error")
-        axs[2].legend()
+        axs[1].plot(times, errores, label="Error", color='red')
+        axs[1].axhline(0, color="gray", linestyle="--")
+        axs[1].set_ylabel("Error")
+        axs[1].legend()
 
         # Controlador PID
-        axs[3].plot(times, control, label="Control PID", color='black')
-        axs[3].axhline(0, color="gray", linestyle="--")
-        axs[3].set_ylabel("PID")
-        axs[3].legend()
+        axs[2].plot(times, control, label="Control PID", color='black')
+        axs[2].axhline(0, color="gray", linestyle="--")
+        axs[2].set_ylabel("PID")
+        axs[2].legend()
 
         # Proporcional
-        axs[4].plot(times, ctrl_proporcional, label="Control Proporcional", color='blue')
-        axs[4].axhline(0, color="gray", linestyle="--")
-        axs[4].set_ylabel("P")
-        axs[4].legend()
+        axs[3].plot(times, ctrl_proporcional, label="Control Proporcional", color='blue')
+        axs[3].axhline(0, color="gray", linestyle="--")
+        axs[3].set_ylabel("P")
+        axs[3].legend()
 
         # Gráfico 4: Integral
-        axs[5].plot(times, ctrl_integral, label="Control Integral", color='orange')
-        axs[5].axhline(0, color="gray", linestyle="--")
-        axs[5].set_ylabel("I")
-        axs[5].legend()
+        axs[4].plot(times, ctrl_integral, label="Control Integral", color='orange')
+        axs[4].axhline(0, color="gray", linestyle="--")
+        axs[4].set_ylabel("I")
+        axs[4].legend()
 
         # Derivativo
-        axs[6].plot(times, ctrl_derivativo, label="Control Derivativo", color='green')
-        axs[6].axhline(0, color="gray", linestyle="--")
-        axs[6].set_ylabel("D")
-        axs[6].legend()
+        axs[5].plot(times, ctrl_derivativo, label="Control Derivativo", color='green')
+        axs[5].axhline(0, color="gray", linestyle="--")
+        axs[5].set_ylabel("D")
+        axs[5].legend()
 
         # Perturbaciones
         axs[7].plot(times, pert1, label="Perturbación 1", color='black')
