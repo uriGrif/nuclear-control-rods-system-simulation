@@ -9,9 +9,9 @@ NEUTRON_RADIUS = 3
 NEUTRONS_PER_FISSION = 3
 CONTROL_RODS_HEIGHT = 500
 MAXIMUM_NEUTRON_LIFESPAN = 120
-K_PROPORTIONAL = 0.6
-K_INTEGRAL = 0.2
-K_DERIVATIVE = 0.00001
+K_PROPORTIONAL = 0.5
+K_INTEGRAL = 0.25
+K_DERIVATIVE = 0.001
 
 MAX_ACCUM_ERROR = 5000
 
@@ -106,6 +106,7 @@ def run_simulador(q):
     corriendo = True
     perturbation1 = 0
     perturbation2 = 0
+    paused = False
 
     while corriendo:
         for ev in pygame.event.get():
@@ -132,9 +133,17 @@ def run_simulador(q):
                     enable_I = not enable_I
                 elif 560 <= mx <= 640 and 400 <= my <= 430:
                     enable_D = not enable_D
+                # Pausa
+                elif 650 <= mx <= 700 and 10 <= my <= 40:
+                    paused = not paused
 
             elif ev.type == pygame.MOUSEBUTTONUP:
                 slider_active = False
+
+        if paused:
+            pygame.display.flip()
+            reloj.tick(FPS)
+            continue
 
         if slider_active:
             mx, _ = pygame.mouse.get_pos()
@@ -208,6 +217,7 @@ def run_simulador(q):
         for c in control_rods: c.draw(display)
         for n in neutrons: n.draw(display)
         texto = font.render(f"Neutrones activos: {len(neutrons)}", True, (0, 0, 0))
+        pygame.draw.rect(display, (255, 255, 255), (8, 8, texto.get_width() + 4, texto.get_height() + 4))
         display.blit(texto, (10, 10))
         pygame.draw.rect(display, (200, 200, 200), (slider_x, slider_y, slider_width, slider_height))
         handle_x = int(slider_x + (neutron_target / 1000) * slider_width)
@@ -229,7 +239,7 @@ def run_simulador(q):
         perturbation2 = 0
 
         # Botones interruptores PID
-      # Botones interruptores PID a la derecha de los de perturbación
+        # Botones interruptores PID a la derecha de los de perturbación
         pygame.draw.rect(display, (180, 255, 180) if enable_P else (255, 180, 180), (380, 400, 80, 30))
         textP = font.render("P ON" if enable_P else "P OFF", True, (0, 0, 0))
         display.blit(textP, (390, 405))
@@ -242,6 +252,10 @@ def run_simulador(q):
         textD = font.render("D ON" if enable_D else "D OFF", True, (0, 0, 0))
         display.blit(textD, (570, 405))
 
+        # Boton Pausa
+        pygame.draw.rect(display, (255, 255, 180), (650, 10, 50, 30))
+        pause_text = font.render('>/ll', True, (0, 0, 0))
+        display.blit(pause_text, (665, 15))
 
         pygame.display.flip()
         reloj.tick(FPS)

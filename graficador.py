@@ -6,7 +6,8 @@ import time
 
 def run_graficador(q):
     plt.ion()
-    fig, axs = plt.subplots(8, 1, figsize=(12, 16), sharex=True)
+    fig, axs = plt.subplots(5, 2, figsize=(16, 12), sharex=True)
+    axs = axs.flatten()
     manager = plt.get_current_fig_manager()
 
     # Intentar posicionar la ventana solo si tiene atributo .window
@@ -34,7 +35,7 @@ def run_graficador(q):
                                   derivative_control, neutron_target, realimentacion,
                                   perturbacion1, perturbacion2))
             tiempo += 1 / FPS
-            if len(error_history) > 1800:
+            if len(error_history) > 1200:
                 error_history.pop(0)
 
         # Extraer datos
@@ -54,22 +55,25 @@ def run_graficador(q):
             ax.clear()
 
         # Entrada
-        axs[0].plot(times, entrada, label="Entrada (Setpoint)", color='purple')
-        axs[0].axhline(0, color="gray", linestyle="--")
-        axs[0].set_ylabel("Entrada")
-        axs[0].legend()
+        axs[1].plot(times, entrada, label="Entrada (Setpoint)", color='purple')
+        axs[1].axhline(0, color="gray", linestyle="--")
+        axs[1].set_ylabel("Entrada")
+        axs[1].legend()
         
         # Realimentacion
-        axs[6].plot(times, realim, label="Realimentación", color='brown')
-        axs[6].axhline(0, color="gray", linestyle="--")
-        axs[6].set_ylabel("Señal")
-        axs[6].legend()
+        axs[0].plot(times, realim, label="Realimentación / Salida", color='brown')
+        # axs[0].plot(entrada, color='gray', linestyle='--', label="Setpoint")
+        axs[0].set_ylabel("Señal")
+        axs[0].legend()
+        setpoint = entrada[-1] if entrada else 0
+        axs[0].set_ylim(setpoint - 200, setpoint + 200)
+        axs[0].fill_between(times, [setpoint - 80] * len(times), [setpoint + 80] * len(times), color='brown', alpha=0.3)
 
         # Error
-        axs[1].plot(times, errores, label="Error", color='red')
-        axs[1].axhline(0, color="gray", linestyle="--")
-        axs[1].set_ylabel("Error")
-        axs[1].legend()
+        axs[3].plot(times, errores, label="Error", color='red')
+        axs[3].axhline(0, color="gray", linestyle="--")
+        axs[3].set_ylabel("Error")
+        axs[3].legend()
 
         # Controlador PID
         axs[2].plot(times, control, label="Control PID", color='black')
@@ -78,29 +82,29 @@ def run_graficador(q):
         axs[2].legend()
 
         # Proporcional
-        axs[3].plot(times, ctrl_proporcional, label="Control Proporcional", color='blue')
-        axs[3].axhline(0, color="gray", linestyle="--")
-        axs[3].set_ylabel("P")
-        axs[3].legend()
-
-        # Gráfico 4: Integral
-        axs[4].plot(times, ctrl_integral, label="Control Integral", color='orange')
+        axs[4].plot(times, ctrl_proporcional, label="Control Proporcional", color='blue')
         axs[4].axhline(0, color="gray", linestyle="--")
-        axs[4].set_ylabel("I")
+        axs[4].set_ylabel("P")
         axs[4].legend()
 
+        # Gráfico 4: Integral
+        axs[6].plot(times, ctrl_integral, label="Control Integral", color='orange')
+        axs[6].axhline(0, color="gray", linestyle="--")
+        axs[6].set_ylabel("I")
+        axs[6].legend()
+
         # Derivativo
-        axs[5].plot(times, ctrl_derivativo, label="Control Derivativo", color='green')
-        axs[5].axhline(0, color="gray", linestyle="--")
-        axs[5].set_ylabel("D")
-        axs[5].legend()
+        axs[8].plot(times, ctrl_derivativo, label="Control Derivativo", color='green')
+        axs[8].axhline(0, color="gray", linestyle="--")
+        axs[8].set_ylabel("D")
+        axs[8].legend()
 
         # Perturbaciones
-        axs[7].plot(times, pert1, label="Perturbación 1", color='black')
-        axs[7].plot(times, pert2, label="Perturbación 2", color='gray')
-        axs[7].set_ylabel("Perturbaciones")
-        axs[7].set_xlabel("Tiempo (s)")
-        axs[7].legend()
+        axs[5].plot(times, pert1, label="Perturbación 1", color='black')
+        axs[5].plot(times, pert2, label="Perturbación 2", color='gray')
+        axs[5].set_ylabel("Perturbaciones")
+        axs[5].set_xlabel("Tiempo (s)")
+        axs[5].legend()
 
         plt.pause(1 / FPS)
         time.sleep(1 / FPS)
