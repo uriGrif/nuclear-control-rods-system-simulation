@@ -7,6 +7,12 @@ Autores:
 -   Uriel Grifman
 -   Gonzalo Turri
 
-Para correr, se necesita cualquier version de python 3+, con las siguientes librerias:
+## Cómo ejecutar?
 
--   pygame
+Clonar o descargar el repositorio como .zip
+
+Para correr, se necesita tener instalado [python 3.12](https://www.python.org/downloads/release/python-3120/) y hay que ejcutar el archivo **setup_script.bat** (haciendo doble click sobre el archivo deberia funcionar)
+
+Este archivo creara un entorno virtual, instalara en el las dependencias necesarias y finalmente va a iniciar la simulacion.
+
+Se abriran 2 ventanas, una con la simulacion en si y los controles y otra con los graficos.
