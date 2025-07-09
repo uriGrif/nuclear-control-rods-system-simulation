@@ -61,11 +61,11 @@ def run_graficador(q):
         axs[1].legend()
         
         # Realimentacion
+        setpoint = entrada[-1] if entrada else 0
         axs[0].plot(times, realim, label="Realimentación / Salida", color='brown')
-        # axs[0].plot(entrada, color='gray', linestyle='--', label="Setpoint")
+        axs[0].axhline(setpoint, color='gray', linestyle='--')
         axs[0].set_ylabel("Señal")
         axs[0].legend()
-        setpoint = entrada[-1] if entrada else 0
         axs[0].set_ylim(setpoint - 200, setpoint + 200)
         axs[0].fill_between(times, [setpoint - 80] * len(times), [setpoint + 80] * len(times), color='brown', alpha=0.3)
 
