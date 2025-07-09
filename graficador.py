@@ -6,7 +6,7 @@ import time
 
 def run_graficador(q):
     plt.ion()
-    fig, axs = plt.subplots(5, 2, figsize=(16, 12), sharex=True)
+    fig, axs = plt.subplots(5, 2, figsize=(10, 8), sharex=True)
     axs = axs.flatten()
     manager = plt.get_current_fig_manager()
 
@@ -17,7 +17,7 @@ def run_graficador(q):
         except Exception as e:
             print(f"No se pudo posicionar la ventana: {e}")
     
-    fig.tight_layout(pad=3.0)
+    fig.tight_layout(pad=1.0)
 
     # resto del bucle o lógica de graficación...
 
@@ -62,12 +62,13 @@ def run_graficador(q):
         
         # Realimentacion
         setpoint = entrada[-1] if entrada else 0
+        last_realim = realim[-1] if realim else 0
         axs[0].plot(times, realim, label="Realimentación / Salida", color='brown')
         axs[0].axhline(setpoint, color='gray', linestyle='--')
         axs[0].set_ylabel("Señal")
         axs[0].legend()
-        axs[0].set_ylim(setpoint - 200, setpoint + 200)
-        axs[0].fill_between(times, [setpoint - 80] * len(times), [setpoint + 80] * len(times), color='brown', alpha=0.3)
+        axs[0].set_ylim(last_realim - 200, last_realim + 200)
+        axs[0].fill_between(times, [setpoint - 100] * len(times), [setpoint + 100] * len(times), color='brown', alpha=0.3)
 
         # Error
         axs[3].plot(times, errores, label="Error", color='red')
