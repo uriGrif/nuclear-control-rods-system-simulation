@@ -11,6 +11,12 @@ Autores:
 
 Clonar o descargar el repositorio como .zip
 
+En caso de querer clonarlo, en un *git bash* ejecutar:
+
+```
+git clone https://github.com/uriGrif/nuclear-control-rods-system-simulation.git
+```
+
 Para correr, se necesita tener instalado [python 3.12](https://www.python.org/downloads/release/python-3120/) y hay que ejcutar el archivo **setup_script.bat** (haciendo doble click sobre el archivo deberia funcionar)
 
 Este archivo creara un entorno virtual, instalara en el las dependencias necesarias y finalmente va a iniciar la simulacion.
