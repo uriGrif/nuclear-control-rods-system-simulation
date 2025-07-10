@@ -28,13 +28,13 @@ if not exist ".venv" (
 REM Paso 3: Activar entorno virtual
 call .venv\Scripts\activate
 
-REM Paso 4: Instalar dependencias si no está site-packages
-if not exist ".venv\Lib\site-packages" (
-    echo Instalando dependencias...
-    pip install --upgrade pip
+REM Paso 4: Instalar dependencias siempre que exista requirements.txt
+if exist requirements.txt (
+    echo Instalando dependencias desde requirements.txt...
+    python -m pip install --upgrade pip
     pip install -r requirements.txt
 ) else (
-    echo Dependencias ya instaladas (asumido). Saltando instalación.
+    echo No se encontro requirements.txt, saltando instalacion de dependencias.
 )
 
 REM Paso 5: Ejecutar el script principal
