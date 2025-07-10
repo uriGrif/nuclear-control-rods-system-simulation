@@ -1,54 +1,47 @@
 @echo off
 setlocal
 
-REM Paso 1: Verificar si Python 3.12 está instalado
-where python >nul 2>nul
+REM Paso 1: Verificar si Python 3.12 está disponible
+py -3.12 -V >nul 2>nul
 if errorlevel 1 (
-echo Python no está instalado. Por favor instalá Python 3.12 manualmente desde:
-echo https://www.python.org/downloads/release/python-3120/
+echo Python 3.12 no está instalado o no se encuentra en el PATH.
+echo Por favor instalá Python 3.12 desde: https://www.python.org/downloads/release/python-3120/
 pause
 exit /b
 )
 
-for /f "tokens=2 delims=[]" %%a in ('python -V 2^>^&1') do set "PY_VERSION=%%a"
-echo Detectado Python %PY_VERSION%
+echo Detectado Python 3.12
 
-REM Paso 2: Verificar si existe el entorno virtual
+REM Paso 2: Crear entorno virtual si no existe
+if not exist ".venv" (
 echo.
-if exist .venv\Scripts\activate (
-echo Entorno virtual ya existe. Se usará el existente.
-) else (
 echo Creando entorno virtual...
-python -m venv .venv
+py -3.12 -m venv .venv
 if errorlevel 1 (
 echo Error al crear el entorno virtual.
 pause
 exit /b
 )
+) else (
+echo.
+echo Entorno virtual ya existe. Usando entorno existente.
 )
 
-REM Paso 3: Activar el entorno virtual
-echo.
-echo Activando entorno virtual...
+REM Paso 3: Activar entorno virtual
 call .venv\Scripts\activate
 
-REM Paso 4: Verificar si dependencias están instaladas
+REM Paso 4: Instalar dependencias si no están instaladas
+if not exist ".venv\Lib\site-packages\pygame" (
 echo.
-if exist .venv\installed.flag (
-echo Requisitos ya instalados previamente.
-) else (
-echo Instalando dependencias desde requirements.txt...
+echo Instalando dependencias...
 pip install --upgrade pip
 pip install -r requirements.txt
-if errorlevel 1 (
-echo Fallo la instalación de dependencias.
-pause
-exit /b
-)
-echo Instalación completada. > .venv\installed.flag
+) else (
+echo.
+echo Dependencias ya instaladas.
 )
 
-REM Paso 5: Ejecutar el script
+REM Paso 5: Ejecutar main.py
 echo.
 echo Ejecutando main.py...
 python main.py
